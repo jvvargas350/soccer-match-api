@@ -139,9 +139,23 @@ async def get_match_by_id(fixture_id: int):
             status_code=404,
             detail="Match not found"
         )
-
+    
     match = data["response"][0]
-
+    
+    events = []
+    
+    for event in match.get("events", []):
+        event_data = {
+            "elapsed" : event["time"]["elapsed"],
+            "extra" : event["time"].get("extra"),
+            "team" : event["team"]["name"],
+            "player": event["player"]["name"],
+            "assist": event["assist"]["name"],
+            "event_type": event["type"],
+            "detail": event["detail"]           
+        }
+        events.append(event_data)
+    
     return {
         "fixture_id": match["fixture"]["id"],
         "league": match["league"]["name"],
