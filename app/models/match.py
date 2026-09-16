@@ -20,8 +20,22 @@ class MatchEvent(BaseModel):
     event_type: str
     detail: str
     
+class TeamStats(BaseModel):
+    shots_on_goal: int | None = None
+    shots_off_goal: int | None = None
+    total_shots: int | None = None
+    blocked_shots: int | None = None
+    possession: str | None = None
+    corners: int | None = None
+    offsides: int | None = None
+    fouls: int | None = None
+    yellow_cards: int | None = None
+    red_cards: int | None = None
+    
 class MatchDetail(Match):
     venue: str | None = None
     city: str | None = None
     referee: str | None = None
     events: list[MatchEvent] =[]
+    home_stats: TeamStats | None = None
+    away_stats: TeamStats | None = None

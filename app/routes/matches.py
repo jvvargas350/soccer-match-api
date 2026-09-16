@@ -4,7 +4,11 @@ from fastapi import APIRouter
 
 from app.models.match import Match, MatchDetail
 
-from app.services.soccer_api import get_matches_by_date, get_match_by_id
+from app.services.soccer_api import (
+    get_matches_by_date,
+    get_match_by_id,
+    get_match_statistics
+)
 
 router = APIRouter(
     prefix="/matches",
@@ -26,7 +30,11 @@ async def matches_by_date(match_date: date,
     return await get_matches_by_date(match_date.isoformat(),
         league_id,
         season)
-    
+
+@router.get("/{fixture_id}/statistics")
+async def match_statistics(fixture_id: int):
+    return await get_match_statistics(fixture_id)
+
 @router.get("/{fixture_id}", response_model=MatchDetail)
 async def match_by_id(fixture_id: int):
     return await get_match_by_id(fixture_id)

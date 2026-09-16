@@ -142,6 +142,8 @@ async def get_match_by_id(fixture_id: int):
     
     match = data["response"][0]
     
+    statistics = await get_match_statistics(fixture_id)
+    
     events = []
     
     for event in match.get("events", []):
@@ -167,5 +169,91 @@ async def get_match_by_id(fixture_id: int):
         "away_score": match["goals"]["away"],
         "venue": match["fixture"]["venue"]["name"],
         "city": match["fixture"]["venue"]["city"],
-        "referee": match["fixture"]["referee"]
+        "referee": match["fixture"]["referee"],
+        "events": events,
+        "home_stats": statistics["home"],
+        "away_stats": statistics["away"]
+    }
+def transform_statistics(statistics: list):
+    stats_by_type = {
+        stat["type"]: stat["value"]
+        for stat in statistics
+    }
+
+    return {
+        "shots_on_goal": stats_by_type.get("Shots on Goal"),
+        "shots_off_goal": stats_by_type.get("Shots off Goal"),
+        "total_shots": stats_by_type.get("Total Shots"),
+        "blocked_shots": stats_by_type.get("Blocked Shots"),
+        "possession": stats_by_type.get("Ball Possession"),
+        "corners": stats_by_type.get("Corner Kicks"),
+        "offsides": stats_by_type.get("Offsides"),
+        "fouls": stats_by_type.get("Fouls"),
+        "yellow_cards": stats_by_type.get("Yellow Cards"),
+        "red_cards": stats_by_type.get("Red Cards")
+    }
+    
+async def get_match_statistics(fixture_id: int):
+    url = f"{BASE_URL}/fixtures/statistics"
+
+    headers = {
+        "x-apisports-key": API_KEY
+    }
+
+    params = {
+        "fixture": fixture_id
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                url,
+                headers=headers,
+                params=params
+            )
+
+        response.raise_for_status()
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail="Soccer data provider timed out"
+        )
+
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Soccer data provider returned an error: {exc.response.status_code}"
+        )
+
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to soccer data provider"
+        )
+
+    data = response.json()
+
+    if data.get("errors"):
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Soccer data provider returned an API error",
+                "errors": data["errors"]
+            }
+        )
+
+    statistics = data["response"]
+    
+    if len(statistics) < 2:
+        return {
+            "home": None,
+            "away": None
+        }
+    home_stats = transform_statistics(statistics[0]["statistics"])
+    away_stats = transform_statistics(statistics[1]["statistics"])
+    
+    return {
+        "home": home_stats,
+        "away": away_stats
     }
