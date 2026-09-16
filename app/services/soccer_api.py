@@ -61,6 +61,18 @@ async def make_api_request(endpoint: str, params: dict):
 
     return data
 
+def transform_match(match: dict):
+    return {
+        "fixture_id": match["fixture"]["id"],
+        "league": match["league"]["name"],
+        "home_team": match["teams"]["home"]["name"],
+        "away_team": match["teams"]["away"]["name"],
+        "kickoff": match["fixture"]["date"],
+        "status": match["fixture"]["status"]["long"],
+        "home_score": match["goals"]["home"],
+        "away_score": match["goals"]["away"]
+    }
+
 async def get_matches_by_date(
     match_date:str,
     league_id: int | None = None,
@@ -81,16 +93,7 @@ async def get_matches_by_date(
     matches= []
     
     for match in data["response"]:
-        match_data = {
-            "fixture_id": match["fixture"]["id"],
-            "league": match["league"]["name"],
-            "home_team": match["teams"]["home"]["name"],
-            "away_team": match["teams"]["away"]["name"],
-            "kickoff": match["fixture"]["date"],
-            "status": match["fixture"]["status"]["long"],
-            "home_score": match["goals"]["home"],
-            "away_score": match["goals"]["away"]
-        }
+        match_data = transform_match(match)
         matches.append(match_data)
     
     
@@ -208,3 +211,19 @@ async def get_team_by_id(team_id: int):
         "national": team["national"],
         "logo": team.get("logo")
     }
+async def get_team_matches(
+    team_id: int,
+    season:int
+):
+    data = await make_api_request(
+        "/fixtures",
+        {"team": team_id, "season": season}
+    )
+
+    matches = []
+    
+    for match in data["response"]:
+        match_data = transform_match(match)
+        matches.append(match_data)
+    
+    return matches
