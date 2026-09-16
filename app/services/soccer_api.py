@@ -150,5 +150,8 @@ async def get_match_by_id(fixture_id: int):
         "kickoff": match["fixture"]["date"],
         "status": match["fixture"]["status"]["long"],
         "home_score": match["goals"]["home"],
-        "away_score": match["goals"]["away"]
+        "away_score": match["goals"]["away"],
+        "venue": match["fixture"]["venue"]["name"],
+        "city": match["fixture"]["venue"]["city"],
+        "referee": match["fixture"]["referee"]
     }
