@@ -185,3 +185,26 @@ async def get_match_statistics(fixture_id: int):
         "home": home_stats,
         "away": away_stats
     }
+async def get_team_by_id(team_id: int):
+    data = await make_api_request(
+        "/teams",
+        {"id": team_id}
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Team not found"
+        )
+    
+    team = data["response"][0]["team"]
+    
+    return {
+        "team_id": team["id"],
+        "name": team["name"],
+        "code": team.get("code"),
+        "country": team["country"],
+        "founded": team.get("founded"),
+        "national": team["national"],
+        "logo": team.get("logo")
+    }
