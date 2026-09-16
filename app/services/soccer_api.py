@@ -1,6 +1,7 @@
 import os 
 
 import httpx 
+from fastapi import HTTPException
 
 from dotenv import load_dotenv
 
@@ -12,7 +13,12 @@ if not API_KEY:
 
 BASE_URL = "https://v3.football.api-sports.io"
 
-async def get_matches_by_date(match_date:str):
+async def get_matches_by_date(
+    match_date:str,
+    league_id: int | None = None,
+    season: int | None = None
+    
+    ):
     url = f"{BASE_URL}/fixtures"
     
     headers = {
@@ -21,15 +27,43 @@ async def get_matches_by_date(match_date:str):
     params = {
         "date": match_date
     }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url, 
-            headers=headers,
-            params = params
-        )
-    response.raise_for_status()
+    if league_id is not None:
+                params["league"] = league_id
+    if season is not None:
+        params["season"] = season
+    try:
+        async with httpx.AsyncClient(timeout = 10.0) as client:
+            response = await client.get(
+                url, 
+                headers=headers,
+                params = params
+            )
+        response.raise_for_status()
     
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Soccer data provider timed out")
+        
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Soccer data provider returned an error: {exc.response.status_code}"
+        )
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to connect to soccer data provider"
+        )    
+        
     data = response.json()
+    
+    if data.get("errors"):
+        raise HTTPException(
+        status_code=502,
+        detail={
+            "message": "Soccer data provider returned an API error",
+            "errors": data["errors"]
+        }
+    )
     
     matches= []
     
