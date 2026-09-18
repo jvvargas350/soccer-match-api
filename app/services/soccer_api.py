@@ -297,3 +297,46 @@ async def get_league_standings(
         transformed_standings.append(standing_data)
 
     return transformed_standings
+
+def transform_top_scorer(item: dict):
+    player = item["player"]
+    statistics = item["statistics"][0]
+
+    return {
+        "player_id": player["id"],
+        "player_name": player["name"],
+        "photo": player["photo"],
+        "team_id": statistics["team"]["id"],
+        "team_name": statistics["team"]["name"],
+        "team_logo": statistics["team"]["logo"],
+        "appearances": statistics["games"]["appearences"],
+        "goals": statistics["goals"]["total"],
+        "assists": statistics["goals"]["assists"]
+    }
+
+
+async def get_top_scorers(
+    league_id: int,
+    season: int
+):
+    data = await make_api_request(
+        "/players/topscorers",
+        {
+            "league": league_id,
+            "season": season
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Top scorers not found"
+        )
+
+    top_scorers = []
+
+    for item in data["response"]:
+        scorer = transform_top_scorer(item)
+        top_scorers.append(scorer)
+
+    return top_scorers
