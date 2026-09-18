@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel 
+from pydantic import BaseModel, Field 
 
 class Match(BaseModel):
     fixture_id: int
@@ -36,6 +36,6 @@ class MatchDetail(Match):
     venue: str | None = None
     city: str | None = None
     referee: str | None = None
-    events: list[MatchEvent] =[]
+    events: list[MatchEvent] = Field(default_factory=list)
     home_stats: TeamStats | None = None
     away_stats: TeamStats | None = None
