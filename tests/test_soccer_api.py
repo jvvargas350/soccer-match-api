@@ -1,8 +1,11 @@
+import pytest
+
 from app.services.soccer_api import (
     transform_match,
     transform_statistics,
     transform_events,
-    transform_team
+    transform_team,
+    get_match_by_id
 )
 
 
@@ -157,3 +160,60 @@ def test_transform_event_with_missing_player_and_assist():
     assert result[0]["assist"] is None
     assert result[0]["elapsed"] == 90
     assert result[0]["extra"] == 3
+    
+@pytest.mark.anyio
+async def test_match_with_missing_venue(monkeypatch):
+    async def mock_make_api_request(endpoint: str, params: dict):
+        return {
+            "response": [
+                {
+                    "fixture": {
+                        "id": 12345,
+                        "date": "2026-09-18T19:00:00Z",
+                        "status": {
+                            "long": "Match Finished"
+                        },
+                        "venue": None,
+                        "referee": None
+                    },
+                    "league": {
+                        "name": "Premier League"
+                    },
+                    "teams": {
+                        "home": {
+                            "name": "Arsenal"
+                        },
+                        "away": {
+                            "name": "Chelsea"
+                        }
+                    },
+                    "goals": {
+                        "home": 2,
+                        "away": 1
+                    },
+                    "events": []
+                }
+            ]
+        }
+
+    async def mock_get_match_statistics(fixture_id: int):
+        return {
+            "home": None,
+            "away": None
+        }
+
+    monkeypatch.setattr(
+        "app.services.soccer_api.make_api_request",
+        mock_make_api_request
+    )
+
+    monkeypatch.setattr(
+        "app.services.soccer_api.get_match_statistics",
+        mock_get_match_statistics
+    )
+
+    result = await get_match_by_id(12345)
+
+    assert result["venue"] is None
+    assert result["city"] is None
+    assert result["referee"] is None

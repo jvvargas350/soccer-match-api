@@ -232,6 +232,8 @@ async def get_match_by_id(fixture_id: int):
     )
 
     match = response[0]
+    
+    venue = match["fixture"].get("venue")
 
     statistics = await get_match_statistics(fixture_id)
     events = transform_events(
@@ -247,9 +249,9 @@ async def get_match_by_id(fixture_id: int):
         "status": match["fixture"]["status"]["long"],
         "home_score": match["goals"]["home"],
         "away_score": match["goals"]["away"],
-        "venue": match["fixture"]["venue"]["name"],
-        "city": match["fixture"]["venue"]["city"],
-        "referee": match["fixture"]["referee"],
+        "venue": venue.get("name") if venue else None,
+        "city": venue.get("city") if venue else None,
+        "referee": match["fixture"].get("referee"),
         "events": events,
         "home_stats": statistics["home"],
         "away_stats": statistics["away"]
