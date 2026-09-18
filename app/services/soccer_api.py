@@ -457,3 +457,41 @@ async def get_team_squad(team_id: int):
         squad.append(squad_player)
 
     return squad
+
+def transform_team(team: dict):
+    return {
+        "team_id": team["id"],
+        "name": team["name"],
+        "code": team["code"],
+        "country": team["country"],
+        "founded": team["founded"],
+        "national": team["national"],
+        "logo": team["logo"]
+    }
+
+
+async def get_league_teams(
+    league_id: int,
+    season: int
+):
+    data = await make_api_request(
+        "/teams",
+        {
+            "league": league_id,
+            "season": season
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="League teams not found"
+        )
+
+    teams = []
+
+    for item in data["response"]:
+        team = transform_team(item["team"])
+        teams.append(team)
+
+    return teams
