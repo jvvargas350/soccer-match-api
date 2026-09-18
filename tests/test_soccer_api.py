@@ -132,3 +132,28 @@ def test_transform_team():
         "national": False,
         "logo": "https://example.com/arsenal.png"
     }
+    
+def test_transform_event_with_missing_player_and_assist():
+    raw_events = [
+        {
+            "time": {
+                "elapsed": 90,
+                "extra": 3
+            },
+            "team": {
+                "name": "Arsenal"
+            },
+            "player": None,
+            "assist": None,
+            "type": "Card",
+            "detail": "Yellow Card"
+        }
+    ]
+
+    result = transform_events(raw_events)
+
+    assert len(result) == 1
+    assert result[0]["player"] is None
+    assert result[0]["assist"] is None
+    assert result[0]["elapsed"] == 90
+    assert result[0]["extra"] == 3

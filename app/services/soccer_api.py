@@ -92,12 +92,15 @@ def transform_events(events: list):
     transformed_events = []
     
     for event in events:
+        player = event.get("player")
+        assist = event.get("assist")
+        
         event_data = {
             "elapsed" : event["time"]["elapsed"],
             "extra" : event["time"].get("extra"),
             "team" : event["team"]["name"],
-            "player": event["player"]["name"],
-            "assist": event["assist"]["name"],
+            "player": player.get("name") if player else None,
+            "assist": assist.get("name") if assist else None,
             "event_type": event["type"],
             "detail": event["detail"]           
         }
