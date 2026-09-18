@@ -4,6 +4,8 @@ from app.routes.matches import router as matches_router
 
 from app.routes.teams import router as teams_router
 
+from app.routes.leagues import router as leagues_router
+
 app = FastAPI(
     title="Soccer Match API",
     description="API for soccer match data",
@@ -12,6 +14,7 @@ app = FastAPI(
 
 app.include_router(matches_router)
 app.include_router(teams_router)
+app.include_router(leagues_router)
 
 @app.get("/")
 def home():

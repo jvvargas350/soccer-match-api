@@ -227,3 +227,69 @@ async def get_team_matches(
         matches.append(match_data)
     
     return matches
+
+async def get_league_by_id(league_id: int):
+    data = await make_api_request(
+        "/leagues",
+        {"id": league_id}
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="League not found"
+        )
+    
+    league_data = data["response"][0]
+    league = league_data["league"]
+    country = league_data["country"]
+    
+    return {
+        "league_id": league["id"],
+        "name": league["name"],
+        "league_type": league["type"],
+        "logo": league.get("logo"),
+        "country": country.get("name"),
+        "country_code": country.get("code"),
+        "flag": league.get("flag")
+    }
+    
+async def get_league_standings(
+    league_id: int,
+    season: int
+):
+    data = await make_api_request(
+        "/standings",
+        {
+            "league": league_id,
+            "season": season
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Standings not found"
+        )
+
+    standings = data["response"][0]["league"]["standings"][0]
+
+    transformed_standings = []
+
+    for standing in standings:
+        standing_data = {
+            "rank": standing["rank"],
+            "team_id": standing["team"]["id"],
+            "team_name": standing["team"]["name"],
+            "team_logo": standing["team"]["logo"],
+            "points": standing["points"],
+            "goals_diff": standing["goalsDiff"],
+            "played": standing["all"]["played"],
+            "wins": standing["all"]["win"],
+            "draws": standing["all"]["draw"],
+            "losses": standing["all"]["lose"]
+        }
+
+        transformed_standings.append(standing_data)
+
+    return transformed_standings
