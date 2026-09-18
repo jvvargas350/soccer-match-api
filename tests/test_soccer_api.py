@@ -1,11 +1,16 @@
+from fastapi import HTTPException
 import pytest
+import asyncio
+import httpx
 
 from app.services.soccer_api import (
     transform_match,
     transform_statistics,
     transform_events,
     transform_team,
-    get_match_by_id
+    get_match_by_id,
+    require_response,
+    make_api_request
 )
 
 
@@ -217,3 +222,167 @@ async def test_match_with_missing_venue(monkeypatch):
     assert result["venue"] is None
     assert result["city"] is None
     assert result["referee"] is None
+
+def test_require_response_returns_data():
+    data = {
+        "response": [
+            {
+                "id": 123
+            }
+        ]
+    }
+
+    result = require_response(
+        data,
+        "Not found"
+    )
+
+    assert result == [
+        {
+            "id": 123
+        }
+    ]
+
+
+def test_require_response_raises_404():
+    data = {
+        "response": []
+    }
+
+    with pytest.raises(HTTPException) as exc:
+        require_response(
+            data,
+            "Team not found"
+        )
+
+    assert exc.value.status_code == 404
+    assert exc.value.detail == "Team not found"
+    
+def test_make_api_request_timeout(monkeypatch):
+    async def mock_get(*args, **kwargs):
+        raise httpx.TimeoutException(
+            "Request timed out"
+        )
+
+    monkeypatch.setattr(
+        httpx.AsyncClient,
+        "get",
+        mock_get
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            make_api_request(
+                "/fixtures",
+                {"id": 123}
+            )
+        )
+
+    assert exc.value.status_code == 504
+    assert exc.value.detail == (
+        "Soccer data provider timed out"
+    )
+
+
+def test_make_api_request_connection_error(monkeypatch):
+    async def mock_get(*args, **kwargs):
+        raise httpx.RequestError(
+            "Connection failed"
+        )
+
+    monkeypatch.setattr(
+        httpx.AsyncClient,
+        "get",
+        mock_get
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            make_api_request(
+                "/fixtures",
+                {"id": 123}
+            )
+        )
+
+    assert exc.value.status_code == 503
+    assert exc.value.detail == (
+        "Unable to connect to soccer data provider"
+    )
+    
+def test_make_api_request_http_error(monkeypatch):
+    async def mock_get(*args, **kwargs):
+        request = httpx.Request(
+            "GET",
+            "https://example.com"
+        )
+
+        response = httpx.Response(
+            500,
+            request=request
+        )
+
+        raise httpx.HTTPStatusError(
+            "Server error",
+            request=request,
+            response=response
+        )
+
+    monkeypatch.setattr(
+        httpx.AsyncClient,
+        "get",
+        mock_get
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            make_api_request(
+                "/fixtures",
+                {"id": 123}
+            )
+        )
+
+    assert exc.value.status_code == 502
+    assert exc.value.detail == (
+        "Soccer data provider returned an error: 500"
+    )
+
+
+def test_make_api_request_api_error(monkeypatch):
+    class MockResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "errors": {
+                    "plan": "Access denied"
+                },
+                "response": []
+            }
+
+    async def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr(
+        httpx.AsyncClient,
+        "get",
+        mock_get
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            make_api_request(
+                "/fixtures",
+                {"id": 123}
+            )
+        )
+
+    assert exc.value.status_code == 502
+    assert exc.value.detail == {
+        "message": (
+            "Soccer data provider returned an API error"
+        ),
+        "errors": {
+            "plan": "Access denied"
+        }
+    }
