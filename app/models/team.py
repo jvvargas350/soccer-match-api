@@ -8,3 +8,11 @@ class Team(BaseModel):
     founded: int | None = None
     national: bool
     logo: str | None = None
+    
+class SquadPlayer(BaseModel):
+    player_id: int
+    name: str
+    age: int | None = None
+    number: int | None = None
+    position: str | None = None
+    photo: str | None = None

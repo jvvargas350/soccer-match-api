@@ -22,3 +22,18 @@ class Player(BaseModel):
     height: str | None = None
     weight: str | None = None
     photo: str | None = None
+    
+class PlayerStatistics(BaseModel):
+    appearances: int | None = None
+    starts: int | None = None
+    minutes: int | None = None
+    rating: str | None = None
+    goals: int | None = None
+    assists: int | None = None
+    shots: int | None = None
+    shots_on_target: int | None = None
+    passes: int | None = None
+    key_passes: int | None = None
+    pass_accuracy: int | None = None
+    yellow_cards: int | None = None
+    red_cards: int | None = None

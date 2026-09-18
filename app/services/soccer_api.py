@@ -372,3 +372,88 @@ async def get_player_by_id(
         "weight": player["weight"],
         "photo": player["photo"]
     }
+    
+def transform_player_statistics(statistics: dict):
+    return {
+        "appearances": statistics["games"]["appearences"],
+        "starts": statistics["games"]["lineups"],
+        "minutes": statistics["games"]["minutes"],
+        "rating": statistics["games"]["rating"],
+        "goals": statistics["goals"]["total"],
+        "assists": statistics["goals"]["assists"],
+        "shots": statistics["shots"]["total"],
+        "shots_on_target": statistics["shots"]["on"],
+        "passes": statistics["passes"]["total"],
+        "key_passes": statistics["passes"]["key"],
+        "pass_accuracy": statistics["passes"]["accuracy"],
+        "yellow_cards": statistics["cards"]["yellow"],
+        "red_cards": statistics["cards"]["red"]
+    }
+
+
+async def get_player_statistics(
+    player_id: int,
+    season: int,
+    league_id: int
+):
+    data = await make_api_request(
+        "/players",
+        {
+            "id": player_id,
+            "season": season,
+            "league": league_id
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Player statistics not found"
+        )
+
+    player_data = data["response"][0]
+
+    if not player_data["statistics"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Player statistics not found"
+        )
+
+    statistics = player_data["statistics"][0]
+
+    return transform_player_statistics(statistics)
+
+def transform_squad_player(player: dict):
+    return {
+        "player_id": player["id"],
+        "name": player["name"],
+        "age": player["age"],
+        "number": player["number"],
+        "position": player["position"],
+        "photo": player["photo"]
+    }
+
+
+async def get_team_squad(team_id: int):
+    data = await make_api_request(
+        "/players/squads",
+        {
+            "team": team_id
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Squad not found"
+        )
+
+    players = data["response"][0]["players"]
+
+    squad = []
+
+    for player in players:
+        squad_player = transform_squad_player(player)
+        squad.append(squad_player)
+
+    return squad
