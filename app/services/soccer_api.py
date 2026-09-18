@@ -253,6 +253,20 @@ async def get_league_by_id(league_id: int):
         "country_code": country.get("code"),
         "flag": league.get("flag")
     }
+
+def transform_standing(standing: dict):
+    return {
+        "rank": standing["rank"],
+        "team_id": standing["team"]["id"],
+        "team_name": standing["team"]["name"],
+        "team_logo": standing["team"]["logo"],
+        "points": standing["points"],
+        "goals_diff": standing["goalsDiff"],
+        "played": standing["all"]["played"],
+        "wins": standing["all"]["win"],
+        "draws": standing["all"]["draw"],
+        "losses": standing["all"]["lose"]
+    }
     
 async def get_league_standings(
     league_id: int,
@@ -274,22 +288,12 @@ async def get_league_standings(
 
     standings = data["response"][0]["league"]["standings"][0]
 
+
+
     transformed_standings = []
 
     for standing in standings:
-        standing_data = {
-            "rank": standing["rank"],
-            "team_id": standing["team"]["id"],
-            "team_name": standing["team"]["name"],
-            "team_logo": standing["team"]["logo"],
-            "points": standing["points"],
-            "goals_diff": standing["goalsDiff"],
-            "played": standing["all"]["played"],
-            "wins": standing["all"]["win"],
-            "draws": standing["all"]["draw"],
-            "losses": standing["all"]["lose"]
-        }
-
+        standing_data = transform_standing(standing)
         transformed_standings.append(standing_data)
 
     return transformed_standings
