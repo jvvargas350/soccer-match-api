@@ -1,24 +1,14 @@
-import os 
-
-import httpx 
+import httpx
 from fastapi import HTTPException
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-API_KEY = os.getenv("API_FOOTBALL_KEY")
-if not API_KEY:
-    raise ValueError("API_FOOTBALL_KEY environment variable is not set")
-
-BASE_URL = "https://v3.football.api-sports.io"
+from app.config import API_FOOTBALL_KEY, API_FOOTBALL_BASE_URL
 
 async def make_api_request(endpoint: str, params: dict):
-    url = f"{BASE_URL}{endpoint}"
+    url = f"{API_FOOTBALL_BASE_URL}{endpoint}"
 
     headers = {
-        "x-apisports-key": API_KEY
-    }
+    "x-apisports-key": API_FOOTBALL_KEY
+}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
