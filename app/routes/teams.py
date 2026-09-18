@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 @router.get("/{team_id}", response_model=Team)
-async def team_by_id(team_id: int):
+async def team_by_id(team_id: int= Path(gt=0)):
     return await get_team_by_id(team_id)
 
 @router.get("/{team_id}/matches", response_model=list[Match])
