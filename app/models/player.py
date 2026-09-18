@@ -11,3 +11,14 @@ class TopScorer(BaseModel):
     appearances: int | None = None
     goals: int | None = None
     assists: int | None = None
+    
+class Player(BaseModel):
+    player_id: int
+    name: str
+    firstname: str | None = None
+    lastname: str | None = None
+    age: int | None = None
+    nationality: str | None = None
+    height: str | None = None
+    weight: str | None = None
+    photo: str | None = None

@@ -340,3 +340,35 @@ async def get_top_scorers(
         top_scorers.append(scorer)
 
     return top_scorers
+
+async def get_player_by_id(
+    player_id: int,
+    season: int
+):
+    data = await make_api_request(
+        "/players",
+        {
+            "id": player_id,
+            "season": season
+        }
+    )
+
+    if not data["response"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Player not found"
+        )
+
+    player = data["response"][0]["player"]
+
+    return {
+        "player_id": player["id"],
+        "name": player["name"],
+        "firstname": player["firstname"],
+        "lastname": player["lastname"],
+        "age": player["age"],
+        "nationality": player["nationality"],
+        "height": player["height"],
+        "weight": player["weight"],
+        "photo": player["photo"]
+    }
