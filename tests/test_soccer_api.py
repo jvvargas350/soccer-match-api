@@ -8,6 +8,9 @@ from app.services.soccer_api import (
     transform_statistics,
     transform_events,
     transform_team,
+    transform_squad_player,
+    transform_top_scorer,
+    transform_player_statistics,
     get_match_by_id,
     require_response,
     make_api_request
@@ -385,4 +388,103 @@ def test_make_api_request_api_error(monkeypatch):
         "errors": {
             "plan": "Access denied"
         }
+    }
+    
+def test_transform_team_with_missing_optional_fields():
+    raw_team = {
+        "id": 100,
+        "name": "Test FC",
+        "country": "England",
+        "national": False
+    }
+
+    result = transform_team(raw_team)
+
+    assert result == {
+        "team_id": 100,
+        "name": "Test FC",
+        "code": None,
+        "country": "England",
+        "founded": None,
+        "national": False,
+        "logo": None
+    }
+
+def test_transform_squad_player_with_missing_optional_fields():
+    raw_player = {
+        "id": 123,
+        "name": "Test Player",
+        "position": "Midfielder"
+    }
+
+    result = transform_squad_player(raw_player)
+
+    assert result == {
+        "player_id": 123,
+        "name": "Test Player",
+        "age": None,
+        "number": None,
+        "position": "Midfielder",
+        "photo": None
+    }
+
+def test_transform_top_scorer_with_missing_optional_fields():
+    raw_scorer = {
+        "player": {
+            "id": 123,
+            "name": "Test Player",
+            "photo": None
+        },
+        "statistics": [
+            {
+                "team": {
+                    "id": 42,
+                    "name": "Test FC",
+                    "logo": None
+                },
+                "games": {},
+                "goals": {}
+            }
+        ]
+    }
+
+    result = transform_top_scorer(raw_scorer)
+
+    assert result == {
+        "player_id": 123,
+        "player_name": "Test Player",
+        "photo": None,
+        "team_id": 42,
+        "team_name": "Test FC",
+        "team_logo": None,
+        "appearances": None,
+        "goals": None,
+        "assists": None
+    }
+    
+def test_transform_player_statistics_with_missing_optional_fields():
+    raw_statistics = {
+        "games": {},
+        "goals": {},
+        "shots": {},
+        "passes": {},
+        "cards": {}
+    }
+
+    result = transform_player_statistics(raw_statistics)
+
+    assert result == {
+        "appearances": None,
+        "starts": None,
+        "minutes": None,
+        "rating": None,
+        "goals": None,
+        "assists": None,
+        "shots": None,
+        "shots_on_target": None,
+        "passes": None,
+        "key_passes": None,
+        "pass_accuracy": None,
+        "yellow_cards": None,
+        "red_cards": None
     }

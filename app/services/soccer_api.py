@@ -151,35 +151,43 @@ def transform_standing(standing: dict):
 def transform_top_scorer(item: dict):
     player = item["player"]
     statistics = item["statistics"][0]
+    team = statistics["team"]
+    games = statistics.get("games", {})
+    goals = statistics.get("goals", {})
 
     return {
         "player_id": player["id"],
         "player_name": player["name"],
-        "photo": player["photo"],
-        "team_id": statistics["team"]["id"],
-        "team_name": statistics["team"]["name"],
-        "team_logo": statistics["team"]["logo"],
-        "appearances": statistics["games"]["appearences"],
-        "goals": statistics["goals"]["total"],
-        "assists": statistics["goals"]["assists"]
+        "photo": player.get("photo"),
+        "team_id": team["id"],
+        "team_name": team["name"],
+        "team_logo": team.get("logo"),
+        "appearances": games.get("appearences"),
+        "goals": goals.get("total"),
+        "assists": goals.get("assists")
     }
 
 
 def transform_player_statistics(statistics: dict):
+    games = statistics.get("games", {})
+    goals = statistics.get("goals", {})
+    shots = statistics.get("shots", {})
+    passes = statistics.get("passes", {})
+    cards = statistics.get("cards", {})
     return {
-        "appearances": statistics["games"]["appearences"],
-        "starts": statistics["games"]["lineups"],
-        "minutes": statistics["games"]["minutes"],
-        "rating": statistics["games"]["rating"],
-        "goals": statistics["goals"]["total"],
-        "assists": statistics["goals"]["assists"],
-        "shots": statistics["shots"]["total"],
-        "shots_on_target": statistics["shots"]["on"],
-        "passes": statistics["passes"]["total"],
-        "key_passes": statistics["passes"]["key"],
-        "pass_accuracy": statistics["passes"]["accuracy"],
-        "yellow_cards": statistics["cards"]["yellow"],
-        "red_cards": statistics["cards"]["red"]
+        "appearances": games.get("appearences"),
+        "starts": games.get("lineups"),
+        "minutes": games.get("minutes"),
+        "rating": games.get("rating"),
+        "goals": goals.get("total"),
+        "assists": goals.get("assists"),
+        "shots": shots.get("total"),
+        "shots_on_target": shots.get("on"),
+        "passes": passes.get("total"),
+        "key_passes": passes.get("key"),
+        "pass_accuracy": passes.get("accuracy"),
+        "yellow_cards": cards.get("yellow"),
+        "red_cards": cards.get("red")
     }
 
 
@@ -187,10 +195,10 @@ def transform_squad_player(player: dict):
     return {
         "player_id": player["id"],
         "name": player["name"],
-        "age": player["age"],
-        "number": player["number"],
-        "position": player["position"],
-        "photo": player["photo"]
+        "age": player.get("age"),
+        "number": player.get("number"),
+        "position": player.get("position"),
+        "photo": player.get("photo")
     }
 
 
