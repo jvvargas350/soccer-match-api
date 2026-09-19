@@ -262,6 +262,10 @@ def test_require_response_raises_404():
     assert exc.value.detail == "Team not found"
     
 def test_make_api_request_timeout(monkeypatch):
+    monkeypatch.setattr(
+    "app.services.soccer_api.API_FOOTBALL_KEY",
+    "test-api-key"
+)
     async def mock_get(*args, **kwargs):
         raise httpx.TimeoutException(
             "Request timed out"
@@ -288,6 +292,10 @@ def test_make_api_request_timeout(monkeypatch):
 
 
 def test_make_api_request_connection_error(monkeypatch):
+    monkeypatch.setattr(
+    "app.services.soccer_api.API_FOOTBALL_KEY",
+    "test-api-key"
+)
     async def mock_get(*args, **kwargs):
         raise httpx.RequestError(
             "Connection failed"
@@ -313,6 +321,10 @@ def test_make_api_request_connection_error(monkeypatch):
     )
     
 def test_make_api_request_http_error(monkeypatch):
+    monkeypatch.setattr(
+    "app.services.soccer_api.API_FOOTBALL_KEY",
+    "test-api-key"
+)
     async def mock_get(*args, **kwargs):
         request = httpx.Request(
             "GET",
@@ -351,6 +363,10 @@ def test_make_api_request_http_error(monkeypatch):
 
 
 def test_make_api_request_api_error(monkeypatch):
+    monkeypatch.setattr(
+    "app.services.soccer_api.API_FOOTBALL_KEY",
+    "test-api-key"
+)
     class MockResponse:
         def raise_for_status(self):
             pass
