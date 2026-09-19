@@ -9,8 +9,3 @@ API_FOOTBALL_BASE_URL = os.getenv(
     "API_FOOTBALL_BASE_URL",
     "https://v3.football.api-sports.io"
 )
-
-if not API_FOOTBALL_KEY:
-    raise ValueError(
-        "API_FOOTBALL_KEY environment variable is not set"
-    )

@@ -5,6 +5,12 @@ from app.config import API_FOOTBALL_KEY, API_FOOTBALL_BASE_URL
 
 
 async def make_api_request(endpoint: str, params: dict):
+    if not API_FOOTBALL_KEY:
+        raise HTTPException(
+        status_code=503,
+        detail="Soccer data provider API key is not configured"
+    )
+    
     url = f"{API_FOOTBALL_BASE_URL}{endpoint}"
 
     headers = {

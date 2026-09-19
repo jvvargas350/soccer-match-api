@@ -488,3 +488,22 @@ def test_transform_player_statistics_with_missing_optional_fields():
         "yellow_cards": None,
         "red_cards": None
     }
+    
+def test_make_api_request_without_api_key(monkeypatch):
+    monkeypatch.setattr(
+        "app.services.soccer_api.API_FOOTBALL_KEY",
+        None
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(
+            make_api_request(
+                "/fixtures",
+                {"id": 123}
+            )
+        )
+
+    assert exc.value.status_code == 503
+    assert exc.value.detail == (
+        "Soccer data provider API key is not configured"
+    )
