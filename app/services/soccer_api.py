@@ -2,7 +2,9 @@ import httpx
 from fastapi import HTTPException
 
 from app.config import API_FOOTBALL_KEY, API_FOOTBALL_BASE_URL
+from sqlalchemy.orm import Session
 
+from app.db_models.team import TeamDB
 
 async def make_api_request(endpoint: str, params: dict):
     if not API_FOOTBALL_KEY:
@@ -510,3 +512,44 @@ async def get_league_teams(
         transform_team(item["team"])
         for item in response
     ]
+    
+async def save_team_to_database(
+    team_id: int,
+    db: Session
+):
+    team_data = await get_team_by_id(team_id)
+
+    existing_team = (
+        db.query(TeamDB)
+        .filter(TeamDB.api_team_id == team_id)
+        .first()
+    )
+
+    if existing_team:
+        existing_team.name = team_data["name"]
+        existing_team.code = team_data["code"]
+        existing_team.country = team_data["country"]
+        existing_team.founded = team_data["founded"]
+        existing_team.national = team_data["national"]
+        existing_team.logo = team_data["logo"]
+
+        db.commit()
+        db.refresh(existing_team)
+
+        return existing_team
+
+    team = TeamDB(
+        api_team_id=team_data["team_id"],
+        name=team_data["name"],
+        code=team_data["code"],
+        country=team_data["country"],
+        founded=team_data["founded"],
+        national=team_data["national"],
+        logo=team_data["logo"]
+    )
+
+    db.add(team)
+    db.commit()
+    db.refresh(team)
+
+    return team
