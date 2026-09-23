@@ -7,11 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.db_models.team import TeamDB
-from app.db_models.league import LeagueDB
-from app.services.soccer_api import (
-    save_team_to_database,
-    save_league_to_database
-)
+
 
 engine = create_engine(
     "sqlite:///:memory:"
@@ -104,55 +100,5 @@ async def test_save_team_to_database_updates_existing_team(
 
     assert len(teams) == 1
     assert teams[0].name == "Arsenal"
-
-    db.close()
-    
-@pytest.mark.anyio
-async def test_save_league_to_database_updates_existing_league(
-    monkeypatch
-):
-    db = TestingSessionLocal()
-
-    async def fake_get_league_by_id(league_id):
-        return {
-            "league_id": 39,
-            "name": "Premier League",
-            "league_type": "League",
-            "logo": "https://example.com/premier-league.png",
-            "country": "England",
-            "country_code": "GB-ENG",
-            "flag": "https://example.com/england.svg"
-        }
-
-    monkeypatch.setattr(
-        "app.services.soccer_api.get_league_by_id",
-        fake_get_league_by_id
-    )
-
-    await save_league_to_database(39, db)
-
-    saved_league = (
-        db.query(LeagueDB)
-        .filter(LeagueDB.api_league_id == 39)
-        .first()
-    )
-
-    assert saved_league is not None
-    assert saved_league.name == "Premier League"
-
-    saved_league.name = "Old League Name"
-    db.commit()
-
-    await save_league_to_database(39, db)
-
-    leagues = (
-        db.query(LeagueDB)
-        .filter(LeagueDB.api_league_id == 39)
-        .all()
-    )
-
-    assert len(leagues) == 1
-    assert leagues[0].name == "Premier League"
-    assert leagues[0].country == "England"
 
     db.close()

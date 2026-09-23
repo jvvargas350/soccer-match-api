@@ -5,6 +5,7 @@ from app.config import API_FOOTBALL_KEY, API_FOOTBALL_BASE_URL
 from sqlalchemy.orm import Session
 
 from app.db_models.team import TeamDB
+from app.db_models.league import LeagueDB
 
 async def make_api_request(endpoint: str, params: dict):
     if not API_FOOTBALL_KEY:
@@ -553,3 +554,44 @@ async def save_team_to_database(
     db.refresh(team)
 
     return team
+
+async def save_league_to_database(
+    league_id: int,
+    db: Session
+):
+    league_data = await get_league_by_id(league_id)
+
+    existing_league = (
+        db.query(LeagueDB)
+        .filter(LeagueDB.api_league_id == league_id)
+        .first()
+    )
+
+    if existing_league:
+        existing_league.name = league_data["name"]
+        existing_league.league_type = league_data["league_type"]
+        existing_league.logo = league_data["logo"]
+        existing_league.country = league_data["country"]
+        existing_league.country_code = league_data["country_code"]
+        existing_league.flag = league_data["flag"]
+
+        db.commit()
+        db.refresh(existing_league)
+
+        return existing_league
+
+    league = LeagueDB(
+        api_league_id=league_data["league_id"],
+        name=league_data["name"],
+        league_type=league_data["league_type"],
+        logo=league_data["logo"],
+        country=league_data["country"],
+        country_code=league_data["country_code"],
+        flag=league_data["flag"]
+    )
+
+    db.add(league)
+    db.commit()
+    db.refresh(league)
+
+    return league
