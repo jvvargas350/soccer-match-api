@@ -8,6 +8,8 @@ from app.db_models.team import TeamDB
 from app.db_models.league import LeagueDB
 from app.db_models.match import MatchDB
 
+from datetime import datetime, timezone
+
 from app.services.soccer_api import (
     save_team_to_database,
     save_league_to_database,
@@ -231,7 +233,6 @@ async def test_save_match_to_database_updates_existing_match(
 ):
     db = TestingSessionLocal()
 
-    # Create the related records first.
     league = LeagueDB(
         api_league_id=999,
         name="Test League",
@@ -336,5 +337,64 @@ async def test_save_match_to_database_updates_existing_match(
     assert matches[0].home_score == 1
     assert matches[0].away_score == 2
     assert matches[0].status == "Match Finished"
+
+    db.close()
+    
+def test_match_database_relationships():
+    db = TestingSessionLocal()
+
+    league = LeagueDB(
+        api_league_id=500,
+        name="Relationship Test League",
+        league_type="League",
+        country="Test Country"
+    )
+
+    home_team = TeamDB(
+        api_team_id=501,
+        name="Home Team",
+        country="Test Country",
+        national=False
+    )
+
+    away_team = TeamDB(
+        api_team_id=502,
+        name="Away Team",
+        country="Test Country",
+        national=False
+    )
+
+    db.add_all([
+        league,
+        home_team,
+        away_team
+    ])
+    db.commit()
+
+    match = MatchDB(
+        api_fixture_id=503,
+        league_id=league.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=datetime(
+            2026, 10, 4, 19, 0,
+            tzinfo=timezone.utc
+        ),
+        status="Match Finished",
+        home_score=2,
+        away_score=1
+    )
+
+    db.add(match)
+    db.commit()
+    db.refresh(match)
+
+    assert match.league.name == "Relationship Test League"
+    assert match.home_team.name == "Home Team"
+    assert match.away_team.name == "Away Team"
+
+    assert match in league.matches
+    assert match in home_team.home_matches
+    assert match in away_team.away_matches
 
     db.close()

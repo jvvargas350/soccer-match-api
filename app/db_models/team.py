@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -47,4 +47,16 @@ class TeamDB(Base):
     logo: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True
+    )
+    
+    home_matches = relationship(
+    "MatchDB",
+    foreign_keys="MatchDB.home_team_id",
+    back_populates="home_team"
+    )
+
+    away_matches = relationship(
+        "MatchDB",
+        foreign_keys="MatchDB.away_team_id",
+        back_populates="away_team"
     )

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -69,4 +69,21 @@ class MatchDB(Base):
     referee: Mapped[str | None] = mapped_column(
         String(200),
         nullable=True
+    )
+    
+    league = relationship(
+    "LeagueDB",
+    back_populates="matches"
+    )
+
+    home_team = relationship(
+        "TeamDB",
+        foreign_keys=[home_team_id],
+        back_populates="home_matches"
+    )
+
+    away_team = relationship(
+        "TeamDB",
+        foreign_keys=[away_team_id],
+        back_populates="away_matches"
     )
