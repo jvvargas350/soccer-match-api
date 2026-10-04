@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 from app.db_models.team import TeamDB
 from app.db_models.league import LeagueDB
 
+from datetime import datetime
+from app.db_models.match import MatchDB
+
 async def make_api_request(endpoint: str, params: dict):
     if not API_FOOTBALL_KEY:
         raise HTTPException(
@@ -595,3 +598,109 @@ async def save_league_to_database(
     db.refresh(league)
 
     return league
+async def save_match_to_database(
+    fixture_id: int,
+    db: Session
+):
+    data = await make_api_request(
+        "/fixtures",
+        {"id": fixture_id}
+    )
+
+    response = require_response(
+        data,
+        "Match not found"
+    )
+
+    raw_match = response[0]
+
+    league_api_id = raw_match["league"]["id"]
+    home_team_api_id = raw_match["teams"]["home"]["id"]
+    away_team_api_id = raw_match["teams"]["away"]["id"]
+
+    league = (
+        db.query(LeagueDB)
+        .filter(LeagueDB.api_league_id == league_api_id)
+        .first()
+    )
+
+    if league is None:
+        league = await save_league_to_database(
+            league_api_id,
+            db
+        )
+
+    home_team = (
+        db.query(TeamDB)
+        .filter(TeamDB.api_team_id == home_team_api_id)
+        .first()
+    )
+
+    if home_team is None:
+        home_team = await save_team_to_database(
+            home_team_api_id,
+            db
+        )
+
+    away_team = (
+        db.query(TeamDB)
+        .filter(TeamDB.api_team_id == away_team_api_id)
+        .first()
+    )
+
+    if away_team is None:
+        away_team = await save_team_to_database(
+            away_team_api_id,
+            db
+        )
+
+    existing_match = (
+        db.query(MatchDB)
+        .filter(MatchDB.api_fixture_id == fixture_id)
+        .first()
+    )
+
+    fixture = raw_match["fixture"]
+    goals = raw_match.get("goals") or {}
+    venue = fixture.get("venue") or {}
+
+    kickoff = datetime.fromisoformat(
+        fixture["date"].replace("Z", "+00:00")
+    )
+
+    if existing_match:
+        existing_match.league_id = league.id
+        existing_match.home_team_id = home_team.id
+        existing_match.away_team_id = away_team.id
+        existing_match.kickoff = kickoff
+        existing_match.status = fixture["status"]["long"]
+        existing_match.home_score = goals.get("home")
+        existing_match.away_score = goals.get("away")
+        existing_match.venue = venue.get("name")
+        existing_match.city = venue.get("city")
+        existing_match.referee = fixture.get("referee")
+
+        db.commit()
+        db.refresh(existing_match)
+
+        return existing_match
+
+    match = MatchDB(
+        api_fixture_id=fixture_id,
+        league_id=league.id,
+        home_team_id=home_team.id,
+        away_team_id=away_team.id,
+        kickoff=kickoff,
+        status=fixture["status"]["long"],
+        home_score=goals.get("home"),
+        away_score=goals.get("away"),
+        venue=venue.get("name"),
+        city=venue.get("city"),
+        referee=fixture.get("referee")
+    )
+
+    db.add(match)
+    db.commit()
+    db.refresh(match)
+
+    return match

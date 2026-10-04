@@ -1,13 +1,18 @@
 from datetime import date
 
-from fastapi import APIRouter, Query, Path
+from fastapi import APIRouter, Depends, Query, Path
 
 from app.models.match import Match, MatchDetail
+
+from sqlalchemy.orm import Session
+
+from app.database import get_db
 
 from app.services.soccer_api import (
     get_matches_by_date,
     get_match_by_id,
-    get_match_statistics
+    get_match_statistics,
+    save_match_to_database
 )
 
 router = APIRouter(
@@ -44,3 +49,31 @@ async def match_by_id(
     fixture_id: int = Path(gt=0)
     ):
     return await get_match_by_id(fixture_id)
+
+@router.post("/{fixture_id}/save")
+async def save_match(
+    fixture_id: int = Path(gt=0),
+    db: Session = Depends(get_db)
+):
+    match = await save_match_to_database(
+        fixture_id=fixture_id,
+        db=db
+    )
+
+    return {
+        "message": "Match saved successfully",
+        "match": {
+            "id": match.id,
+            "api_fixture_id": match.api_fixture_id,
+            "league_id": match.league_id,
+            "home_team_id": match.home_team_id,
+            "away_team_id": match.away_team_id,
+            "kickoff": match.kickoff,
+            "status": match.status,
+            "home_score": match.home_score,
+            "away_score": match.away_score,
+            "venue": match.venue,
+            "city": match.city,
+            "referee": match.referee
+        }
+    }
