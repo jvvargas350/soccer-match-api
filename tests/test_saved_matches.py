@@ -168,3 +168,61 @@ def test_get_saved_match_by_id_invalid_id(client):
     response = client.get("/saved/matches/-1")
 
     assert response.status_code == 422
+    
+    
+def test_filter_saved_matches_by_league(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?league_id=39")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["api_fixture_id"] == 123456
+
+
+def test_filter_saved_matches_by_team(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?team_id=42")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["home_team"]["name"] == "Arsenal"
+
+
+def test_filter_saved_matches_by_away_team(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?team_id=39")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["away_team"]["name"] == "Wolves"
+
+
+def test_filter_saved_matches_by_status(client):
+    create_sample_match()
+
+    response = client.get(
+        "/saved/matches",
+        params={"status": "Match Finished"},
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["status"] == "Match Finished"
+
+
+def test_filter_saved_matches_no_matches(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?league_id=999999")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_filter_saved_matches_invalid_team_id(client):
+    response = client.get("/saved/matches?team_id=-1")
+
+    assert response.status_code == 422

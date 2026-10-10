@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -13,8 +13,18 @@ router = APIRouter(prefix="/saved", tags=["Saved Data"])
 
 
 @router.get("/matches", response_model=list[SavedMatch])
-def read_saved_matches(db: Session = Depends(get_db)):
-    return get_saved_matches(db)
+def read_saved_matches(
+    league_id: int | None = Query(default=None, gt=0),
+    team_id: int | None = Query(default=None, gt=0),
+    status: str | None = Query(default=None, min_length=1),
+    db: Session = Depends(get_db),
+):
+    return get_saved_matches(
+        db=db,
+        league_id=league_id,
+        team_id=team_id,
+        status=status,
+    )
 
 @router.get("/matches/{fixture_id}", response_model=SavedMatch)
 def read_saved_match(
