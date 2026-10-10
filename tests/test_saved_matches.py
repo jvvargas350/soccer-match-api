@@ -135,3 +135,36 @@ def test_get_saved_matches_includes_related_data(client):
 
     assert match["away_team"]["name"] == "Wolves"
     assert match["away_team"]["api_team_id"] == 39
+    
+def test_get_saved_match_by_id_returns_match(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches/123456")
+
+    assert response.status_code == 200
+
+    match = response.json()
+
+    assert match["api_fixture_id"] == 123456
+    assert match["status"] == "Match Finished"
+    assert match["home_score"] == 2
+    assert match["away_score"] == 1
+
+    assert match["league"]["name"] == "Premier League"
+    assert match["home_team"]["name"] == "Arsenal"
+    assert match["away_team"]["name"] == "Wolves"
+
+
+def test_get_saved_match_by_id_not_found(client):
+    response = client.get("/saved/matches/999999999")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Saved match not found"
+    }
+
+
+def test_get_saved_match_by_id_invalid_id(client):
+    response = client.get("/saved/matches/-1")
+
+    assert response.status_code == 422
