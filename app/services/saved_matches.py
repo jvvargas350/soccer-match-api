@@ -9,6 +9,8 @@ def get_saved_matches(
     league_id: int | None = None,
     team_id: int | None = None,
     status: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
 ):
     statement = (
         select(MatchDB)
@@ -35,7 +37,12 @@ def get_saved_matches(
             MatchDB.status == status
         )
 
-    statement = statement.order_by(MatchDB.kickoff.desc())
+    statement = (
+    statement
+    .order_by(MatchDB.kickoff.desc(), MatchDB.id.desc())
+    .limit(limit)
+    .offset(offset)
+)
 
     return db.scalars(statement).all()
 

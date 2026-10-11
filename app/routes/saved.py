@@ -17,6 +17,8 @@ def read_saved_matches(
     league_id: int | None = Query(default=None, gt=0),
     team_id: int | None = Query(default=None, gt=0),
     status: str | None = Query(default=None, min_length=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
     return get_saved_matches(
@@ -24,6 +26,8 @@ def read_saved_matches(
         league_id=league_id,
         team_id=team_id,
         status=status,
+        limit=limit,
+        offset=offset,
     )
 
 @router.get("/matches/{fixture_id}", response_model=SavedMatch)

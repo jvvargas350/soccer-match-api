@@ -226,3 +226,48 @@ def test_filter_saved_matches_invalid_team_id(client):
     response = client.get("/saved/matches?team_id=-1")
 
     assert response.status_code == 422
+    
+def test_saved_matches_default_pagination(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_saved_matches_limit_one(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?limit=1&offset=0")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["api_fixture_id"] == 123456
+
+
+def test_saved_matches_offset_skips_match(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?limit=1&offset=1")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_saved_matches_invalid_limit_zero(client):
+    response = client.get("/saved/matches?limit=0")
+
+    assert response.status_code == 422
+
+
+def test_saved_matches_invalid_limit_over_100(client):
+    response = client.get("/saved/matches?limit=101")
+
+    assert response.status_code == 422
+
+
+def test_saved_matches_invalid_offset(client):
+    response = client.get("/saved/matches?offset=-1")
+
+    assert response.status_code == 422
