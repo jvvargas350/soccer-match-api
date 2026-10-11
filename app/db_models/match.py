@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -8,6 +8,15 @@ from app.database import Base
 
 class MatchDB(Base):
     __tablename__ = "matches"
+    
+    __table_args__ = (
+    Index("ix_matches_kickoff", "kickoff"),
+    Index("ix_matches_created_at", "created_at"),
+    Index("ix_matches_status", "status"),
+    Index("ix_matches_league_id", "league_id"),
+    Index("ix_matches_home_team_id", "home_team_id"),
+    Index("ix_matches_away_team_id", "away_team_id"),
+)
 
     id: Mapped[int] = mapped_column(
         Integer,
