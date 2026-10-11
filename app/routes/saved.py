@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,8 @@ def read_saved_matches(
     status: str | None = Query(default=None, min_length=1),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    sort_by: Literal["kickoff", "created_at"] = Query(default="kickoff"),
+    sort_order: Literal["asc", "desc"] = Query(default="desc"),
     db: Session = Depends(get_db),
 ):
     return get_saved_matches(
@@ -28,7 +32,10 @@ def read_saved_matches(
         status=status,
         limit=limit,
         offset=offset,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
+
 
 @router.get("/matches/{fixture_id}", response_model=SavedMatch)
 def read_saved_match(

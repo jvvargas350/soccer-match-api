@@ -11,6 +11,8 @@ def get_saved_matches(
     status: str | None = None,
     limit: int = 20,
     offset: int = 0,
+    sort_by: str = "kickoff",
+    sort_order: str = "desc",
 ):
     statement = select(MatchDB)
 
@@ -36,6 +38,18 @@ def get_saved_matches(
 
     total = db.scalar(count_statement) or 0
 
+    sort_columns = {
+    "kickoff": MatchDB.kickoff,
+    "created_at": MatchDB.created_at,
+}
+
+    sort_column = sort_columns[sort_by]
+
+    if sort_order == "asc":
+        ordering = (sort_column.asc(), MatchDB.id.asc())
+    else:
+        ordering = (sort_column.desc(), MatchDB.id.desc())
+
     statement = (
         statement
         .options(
@@ -43,7 +57,7 @@ def get_saved_matches(
             joinedload(MatchDB.home_team),
             joinedload(MatchDB.away_team),
         )
-        .order_by(MatchDB.kickoff.desc(), MatchDB.id.desc())
+        .order_by(*ordering)
         .limit(limit)
         .offset(offset)
     )

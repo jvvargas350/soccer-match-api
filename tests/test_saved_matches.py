@@ -382,3 +382,95 @@ def test_saved_matches_has_next_when_more_records_exist(client):
     assert data["has_next"] is True
     assert len(data["matches"]) == 1
     assert data["matches"][0]["api_fixture_id"] == 123457
+    
+def test_saved_matches_sort_kickoff_ascending(client):
+    create_sample_match()
+
+    with TestingSessionLocal() as db:
+        first_match = db.query(MatchDB).filter_by(
+            api_fixture_id=123456
+        ).first()
+
+        second_match = MatchDB(
+            api_fixture_id=123457,
+            league_id=first_match.league_id,
+            home_team_id=first_match.home_team_id,
+            away_team_id=first_match.away_team_id,
+            kickoff=datetime(2026, 10, 11, 15, 0, tzinfo=timezone.utc),
+            status="Match Finished",
+        )
+
+        db.add(second_match)
+        db.commit()
+
+    response = client.get(
+        "/saved/matches?sort_by=kickoff&sort_order=asc"
+    )
+
+    assert response.status_code == 200
+
+    matches = response.json()["matches"]
+
+    assert len(matches) == 2
+    assert matches[0]["api_fixture_id"] == 123456
+    assert matches[1]["api_fixture_id"] == 123457
+
+
+def test_saved_matches_sort_kickoff_descending(client):
+    create_sample_match()
+
+    with TestingSessionLocal() as db:
+        first_match = db.query(MatchDB).filter_by(
+            api_fixture_id=123456
+        ).first()
+
+        second_match = MatchDB(
+            api_fixture_id=123457,
+            league_id=first_match.league_id,
+            home_team_id=first_match.home_team_id,
+            away_team_id=first_match.away_team_id,
+            kickoff=datetime(2026, 10, 11, 15, 0, tzinfo=timezone.utc),
+            status="Match Finished",
+        )
+
+        db.add(second_match)
+        db.commit()
+
+    response = client.get(
+        "/saved/matches?sort_by=kickoff&sort_order=desc"
+    )
+
+    assert response.status_code == 200
+
+    matches = response.json()["matches"]
+
+    assert len(matches) == 2
+    assert matches[0]["api_fixture_id"] == 123457
+    assert matches[1]["api_fixture_id"] == 123456
+
+
+def test_saved_matches_sort_created_at(client):
+    create_sample_match()
+
+    response = client.get(
+        "/saved/matches?sort_by=created_at&sort_order=asc"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+
+
+def test_saved_matches_invalid_sort_by(client):
+    response = client.get(
+        "/saved/matches?sort_by=invalid"
+    )
+
+    assert response.status_code == 422
+
+
+def test_saved_matches_invalid_sort_order(client):
+    response = client.get(
+        "/saved/matches?sort_order=random"
+    )
+
+    assert response.status_code == 422
