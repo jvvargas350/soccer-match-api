@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db_models.match import MatchDB
@@ -12,14 +12,7 @@ def get_saved_matches(
     limit: int = 20,
     offset: int = 0,
 ):
-    statement = (
-        select(MatchDB)
-        .options(
-            joinedload(MatchDB.league),
-            joinedload(MatchDB.home_team),
-            joinedload(MatchDB.away_team),
-        )
-    )
+    statement = select(MatchDB)
 
     if league_id is not None:
         statement = statement.where(
@@ -28,8 +21,8 @@ def get_saved_matches(
 
     if team_id is not None:
         statement = statement.where(
-            (MatchDB.home_team.has(api_team_id=team_id))
-            | (MatchDB.away_team.has(api_team_id=team_id))
+            MatchDB.home_team.has(api_team_id=team_id)
+            | MatchDB.away_team.has(api_team_id=team_id)
         )
 
     if status is not None:
@@ -37,15 +30,33 @@ def get_saved_matches(
             MatchDB.status == status
         )
 
+    count_statement = select(func.count()).select_from(
+        statement.order_by(None).subquery()
+    )
+
+    total = db.scalar(count_statement) or 0
+
     statement = (
-    statement
-    .order_by(MatchDB.kickoff.desc(), MatchDB.id.desc())
-    .limit(limit)
-    .offset(offset)
-)
+        statement
+        .options(
+            joinedload(MatchDB.league),
+            joinedload(MatchDB.home_team),
+            joinedload(MatchDB.away_team),
+        )
+        .order_by(MatchDB.kickoff.desc(), MatchDB.id.desc())
+        .limit(limit)
+        .offset(offset)
+    )
 
-    return db.scalars(statement).all()
+    matches = db.scalars(statement).all()
 
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_next": offset + len(matches) < total,
+        "matches": matches,
+    }
 
 def get_saved_match_by_id(db: Session, fixture_id: int):
     statement = (

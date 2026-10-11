@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.saved_match import SavedMatch
+from app.models.saved_match import SavedMatch, PaginatedSavedMatches
 from app.services.saved_matches import (
     get_saved_matches,
     get_saved_match_by_id,
@@ -12,7 +12,7 @@ from app.services.saved_matches import (
 router = APIRouter(prefix="/saved", tags=["Saved Data"])
 
 
-@router.get("/matches", response_model=list[SavedMatch])
+@router.get("/matches", response_model=PaginatedSavedMatches)
 def read_saved_matches(
     league_id: int | None = Query(default=None, gt=0),
     team_id: int | None = Query(default=None, gt=0),

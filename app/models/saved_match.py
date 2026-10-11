@@ -40,3 +40,10 @@ class SavedMatch(BaseModel):
     referee: str | None
 
     created_at: datetime
+
+class PaginatedSavedMatches(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    has_next: bool
+    matches: list[SavedMatch]

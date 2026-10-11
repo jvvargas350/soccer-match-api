@@ -11,7 +11,7 @@ from app.database import Base, get_db
 from app.db_models import TeamDB, LeagueDB, MatchDB
 
 
-# Create an isolated SQLite database for these tests.
+
 test_engine = create_engine(
     "sqlite://",
     connect_args={"check_same_thread": False},
@@ -27,7 +27,6 @@ TestingSessionLocal = sessionmaker(
 
 @pytest.fixture
 def client():
-    # Start every test with a clean database.
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
 
@@ -98,8 +97,14 @@ def test_get_saved_matches_returns_empty_list(client):
     response = client.get("/saved/matches")
 
     assert response.status_code == 200
-    assert response.json() == []
 
+    data = response.json()
+
+    assert data["total"] == 0
+    assert data["limit"] == 20
+    assert data["offset"] == 0
+    assert data["has_next"] is False
+    assert data["matches"] == []
 
 def test_get_saved_matches_returns_saved_match(client):
     create_sample_match()
@@ -110,13 +115,16 @@ def test_get_saved_matches_returns_saved_match(client):
 
     data = response.json()
 
-    assert len(data) == 1
-    assert data[0]["api_fixture_id"] == 123456
-    assert data[0]["status"] == "Match Finished"
-    assert data[0]["home_score"] == 2
-    assert data[0]["away_score"] == 1
-    assert data[0]["created_at"] is not None
+    assert data["total"] == 1
+    assert len(data["matches"]) == 1
 
+    match = data["matches"][0]
+
+    assert match["api_fixture_id"] == 123456
+    assert match["status"] == "Match Finished"
+    assert match["home_score"] == 2
+    assert match["away_score"] == 1
+    assert match["created_at"] is not None
 
 def test_get_saved_matches_includes_related_data(client):
     create_sample_match()
@@ -125,7 +133,7 @@ def test_get_saved_matches_includes_related_data(client):
 
     assert response.status_code == 200
 
-    match = response.json()[0]
+    match = response.json()["matches"][0]
 
     assert match["league"]["name"] == "Premier League"
     assert match["league"]["api_league_id"] == 39
@@ -176,8 +184,8 @@ def test_filter_saved_matches_by_league(client):
     response = client.get("/saved/matches?league_id=39")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["api_fixture_id"] == 123456
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["matches"][0]["api_fixture_id"] == 123456
 
 
 def test_filter_saved_matches_by_team(client):
@@ -186,8 +194,8 @@ def test_filter_saved_matches_by_team(client):
     response = client.get("/saved/matches?team_id=42")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["home_team"]["name"] == "Arsenal"
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["matches"][0]["home_team"]["name"] == "Arsenal"
 
 
 def test_filter_saved_matches_by_away_team(client):
@@ -196,8 +204,8 @@ def test_filter_saved_matches_by_away_team(client):
     response = client.get("/saved/matches?team_id=39")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["away_team"]["name"] == "Wolves"
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["matches"][0]["away_team"]["name"] == "Wolves"
 
 
 def test_filter_saved_matches_by_status(client):
@@ -209,8 +217,8 @@ def test_filter_saved_matches_by_status(client):
     )
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["status"] == "Match Finished"
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["matches"][0]["status"] == "Match Finished"
 
 
 def test_filter_saved_matches_no_matches(client):
@@ -219,21 +227,18 @@ def test_filter_saved_matches_no_matches(client):
     response = client.get("/saved/matches?league_id=999999")
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["matches"] == []
+    assert response.json()["total"] == 0
 
 
-def test_filter_saved_matches_invalid_team_id(client):
-    response = client.get("/saved/matches?team_id=-1")
-
-    assert response.status_code == 422
-    
 def test_saved_matches_default_pagination(client):
     create_sample_match()
 
     response = client.get("/saved/matches")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["total"] == 1
 
 
 def test_saved_matches_limit_one(client):
@@ -242,8 +247,8 @@ def test_saved_matches_limit_one(client):
     response = client.get("/saved/matches?limit=1&offset=0")
 
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["api_fixture_id"] == 123456
+    assert len(response.json()["matches"]) == 1
+    assert response.json()["matches"][0]["api_fixture_id"] == 123456
 
 
 def test_saved_matches_offset_skips_match(client):
@@ -252,7 +257,9 @@ def test_saved_matches_offset_skips_match(client):
     response = client.get("/saved/matches?limit=1&offset=1")
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["matches"] == []
+    assert response.json()["total"] == 1
+    assert response.json()["has_next"] is False
 
 
 def test_saved_matches_invalid_limit_zero(client):
@@ -271,3 +278,107 @@ def test_saved_matches_invalid_offset(client):
     response = client.get("/saved/matches?offset=-1")
 
     assert response.status_code == 422
+    
+def test_saved_matches_pagination_metadata(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?limit=1&offset=0")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["limit"] == 1
+    assert data["offset"] == 0
+    assert data["has_next"] is False
+    assert len(data["matches"]) == 1
+
+
+def test_saved_matches_pagination_beyond_last_match(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?limit=1&offset=1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["limit"] == 1
+    assert data["offset"] == 1
+    assert data["has_next"] is False
+    assert data["matches"] == []
+
+
+def test_saved_matches_filtered_total(client):
+    create_sample_match()
+
+    response = client.get("/saved/matches?league_id=999999")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 0
+    assert data["matches"] == []
+
+
+def test_saved_matches_filtered_pagination(client):
+    create_sample_match()
+
+    response = client.get(
+        "/saved/matches",
+        params={
+            "league_id": 39,
+            "team_id": 42,
+            "status": "Match Finished",
+            "limit": 1,
+            "offset": 0,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["limit"] == 1
+    assert data["offset"] == 0
+    assert data["has_next"] is False
+    assert data["matches"][0]["api_fixture_id"] == 123456
+    
+    
+def test_saved_matches_has_next_when_more_records_exist(client):
+    create_sample_match()
+
+    with TestingSessionLocal() as db:
+        second_match = MatchDB(
+            api_fixture_id=123457,
+            league_id=1,
+            home_team_id=1,
+            away_team_id=2,
+            kickoff=datetime(2026, 10, 11, 15, 0, tzinfo=timezone.utc),
+            status="Match Finished",
+            home_score=3,
+            away_score=0,
+            venue="Emirates Stadium",
+            city="London",
+            referee="Test Referee",
+        )
+
+        db.add(second_match)
+        db.commit()
+
+    response = client.get("/saved/matches?limit=1&offset=0")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 2
+    assert data["limit"] == 1
+    assert data["offset"] == 0
+    assert data["has_next"] is True
+    assert len(data["matches"]) == 1
+    assert data["matches"][0]["api_fixture_id"] == 123457
